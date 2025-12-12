@@ -1,0 +1,17 @@
+/* src/calendar-dark.css */
+.rbc-dark .rbc-toolbar,
+.rbc-dark .rbc-time-header-gutter,
+.rbc-dark .rbc-time-content > * + * > *,
+.rbc-dark .rbc-day-bg,
+.rbc-dark .rbc-month-row,
+.rbc-dark .rbc-header {
+    border-color: var(--border);
+}
+
+.rbc-dark .rbc-off-range-bg {
+    background-color: hsl(var(--muted) / 0.4);
+}
+
+.rbc-dark .rbc-today {
+    background-color: hsl(var(--secondary));
+}
