@@ -1,95 +1,107 @@
-# MedClinic - Medical Practice Management System
+# MedClinic
 
-[![Firebase Deploy](https://img.shields.io/badge/deploy-firebase-yellow.svg)](https://ca2-medical-app.web.app/welcome)
-[![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)](https://react.dev/)
-[![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=flat&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+Front-end for a medical clinic admin portal, built for the CA2 assignment in Front-End Development. It is a React single page app that talks to a separate REST API for all of its data. Admins manage doctors, patients, appointments, prescriptions and diagnoses. Everyone else who registers gets a smaller patient portal.
 
-A comprehensive, responsive, and feature-rich administration portal for a medical clinic. Built with React (Vite), Tailwind CSS, and ShadCN UI, this application serves as a master-detail interface for managing doctors, patients, appointments, and medical records via a REST API.
+Live: https://ca2-medical-app.web.app/welcome (Firebase Hosting)
 
-# Admin email: admin@medclinic.com
-## Admin password: 12345678
+## Stack
 
-## 🚀 Live Demo
+- React 19 and Vite 7, plain JavaScript (JSX)
+- Tailwind CSS 4 through the `@tailwindcss/vite` plugin, shadcn/ui components (new-york style, Radix underneath), lucide and Tabler icons
+- React Router 7 (`react-router-dom`)
+- Axios for the API, `jwt-decode` for reading the login token
+- React Hook Form with Zod for form validation
+- Recharts for the dashboard charts, React Big Calendar for the schedule, Framer Motion for table and page animation
+- `next-themes` is installed, but the dark mode toggle uses a small custom `ThemeProvider` in `src/components/theme-provider.jsx`
+- Sonner for toasts
+- Firebase Hosting for deployment
 
-**[View the Live Application Here](https://ca2-medical-app.web.app/welcome)**
+## Features
 
----
+Everything below is in the code.
 
-## 🌟 Key Features
+Public side:
+- Landing page at `/welcome`, login and register tabs at `/auth`. Both forms are validated with Zod before anything is sent.
+- Logged-in users are bounced away from these pages to the right dashboard.
 
-This project was engineered to exceed the brief requirements, featuring complex state management, security best practices, and a polished UI.
+Admin side (sidebar layout):
+- Dashboard with counts of doctors, patients and appointments, a bar chart of those counts, a pie chart of doctors by specialisation, the five newest patients, a CSV export of those five, and a current temperature card for Dublin from the Open-Meteo API.
+- Doctors: create, edit, delete, search by name or specialisation, and a detail page.
+- Patients: create, edit, delete, search, and a profile page with appointments, prescriptions and diagnoses in tabs.
+- Appointments: create, edit, delete, and a detail page that pulls in the doctor and patient records.
+- Prescriptions and diagnoses: create, edit, delete, detail pages. A prescription needs a doctor, a patient and a diagnosis.
+- Calendar: appointments shown on a React Big Calendar. Clicking a day opens the booking form with that date filled in, and dragging an event to another day reschedules it.
+- Breadcrumbs that show record names instead of ids once a detail page has loaded.
 
-### 🔐 Authentication & Security
--   **Role-Based Access Control (RBAC):** Distinct dashboards for **Admins** (Full Access) and **Patients** (Limited Portal).
--   **JWT Handling:** Secure token storage with automatic expiration checks to auto-logout users.
--   **Form Validation** Form Validation via zod on each resource
--   **Route Guards:** Protected routes prevent unauthorized access to sensitive pages.
+Patient portal (`/user-dashboard`, no sidebar):
+- Finds the patient record whose email matches the logged-in account, then lists that patient's appointments, prescriptions and diagnoses.
+- Lets the patient book an appointment with a chosen doctor and date.
+- If a non-admin tries an admin URL they are sent here with an "Access Denied" toast.
 
-### 🏥 Clinic Management (CRUD)
--   **Doctors & Patients:** Full directory management with search and filtering.
--   **Appointments:** Interactive scheduling with conflict detection.
--   **Medical Records:** Comprehensive management of **Diagnoses** and **Prescriptions**.
--   **Cascade Deletion:** Advanced logic ensures data integrity. Deleting a Doctor/Patient automatically cleans up their linked Appointments and Prescriptions.
+## Getting started
 
-### 📊 Visualization & UX
--   **Interactive Calendar:** Drag-and-drop appointment rescheduling.
--   **Data Dashboard:** Real-time Recharts (Bar & Pie) visualizing clinic stats.
--   **Dark Mode:** Fully responsive theme toggle persisted in local storage.
--   **Dynamic Breadcrumbs:** Context-aware navigation trails.
--   **Animations:** Smooth page transitions and staggered list loading using Framer Motion.
+```bash
+git clone https://github.com/AdamPandey/ca2-medic-clinic.git
+cd ca2-medic-clinic
+npm install
+npm run dev
+```
 
----
+Other scripts from `package.json`: `npm run build`, `npm run preview`, `npm run lint`. There are no tests.
 
-## 🛠️ Technology Stack
+No environment variables are used. The API address is hardcoded in `src/config/api.js` as `https://ca2-med-api.vercel.app`. That backend is not part of this repo, so the app needs that service to be up. The endpoints the front end calls are `/login`, `/register`, `/doctors`, `/patients`, `/appointments`, `/prescriptions` and `/diagnoses`.
 
-*   **Core:** React 18, Vite
-*   **Styling:** Tailwind CSS, ShadCN UI, Framer Motion
-*   **State Management:** React Context API (Auth & Breadcrumbs)
-*   **Data Fetching:** Axios (with Interceptors)
-*   **Tools:** Recharts, React Big Calendar, Lucide Icons, Date-fns, Sonner (Toast)
-*   **Deployment:** Firebase Hosting
+To get an admin view, log in with the account whose email is set as `ADMIN_EMAIL` in `src/hooks/useAuth.jsx`. That account has to exist on the backend. Any other account lands on the patient portal.
 
----
+## Project structure
 
+```
+src/
+  App.jsx             routes and the three route guards
+  main.jsx            entry, theme provider, calendar CSS
+  config/api.js       Axios instance, adds the Bearer token to every request
+  hooks/useAuth.jsx   AuthContext: login, register, logout, role
+  context/            BreadcrumbContext
+  pages/              Landing, Auth, Home (dashboard), UserDashboard, CalendarView
+    doctors/ patients/ appointments/ prescriptions/ diagnoses/   Index.jsx (list + form) and Show.jsx (detail) for each
+  components/         AdminRoute, Breadcrumbs, app-sidebar, mode-toggle, theme-provider
+  components/ui/      shadcn/ui primitives
+  lib/utils.js        cn() and date formatters
+```
 
+Path alias `@` points to `src` (see `vite.config.js` and `jsconfig.json`).
 
-### Admin Dashboard (Dark Mode)
-![Dashboard]
+## How it works
 
-### Interactive Schedule
-![Calendar]
+Auth: login and register call the API, which returns a JWT. The token is stored in `localStorage` under `token`. On load, `AuthProvider` decodes it, drops it if `exp` has passed, and otherwise restores the session. The Axios interceptor attaches it to every request.
 
-### Patient Profile (Master-Detail View)
-![Profile]
+Roles: there is no role in the token. `useAuth.jsx` marks a user as admin when the decoded email equals the hardcoded `ADMIN_EMAIL`, and everyone else is `user`. `ProtectedRoute` (defined inside `App.jsx`) checks that someone is logged in and `AdminRoute` checks the role.
 
----
+Data: pages fetch with Axios in `useEffect` and keep results in component state. There is no caching layer. Detail pages usually fetch the full list of a related resource and look the record up client-side. Deleting a patient first fetches and deletes that patient's appointments, prescriptions and diagnoses one by one, then the patient.
 
-## 📦 Installation & Setup
+## Deployment
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/AdamPandey/ca2-medic-clinic.git
-    cd ca2-medic-clinic
-    ```
+`firebase.json` serves the `dist` folder as a single page app (every path rewrites to `/index.html`) and `.firebaserc` points at the project `ca2-medical-app`. With the Firebase CLI installed and logged in:
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+```bash
+npm run build
+firebase deploy --only hosting
+```
 
-3.  **Run the development server**
-    ```bash
-    npm run dev
-    ```
+Hosting is the only Firebase feature used. The app source does not import the Firebase SDK, and there is no Firestore, Auth or Functions config.
 
-4.  **Build for production**
-    ```bash
-    npm run build
-    ```
+## Known gaps
 
----
+- The admin check is client-side only, based on an email string in the bundle. It hides pages but does not protect data. Real protection depends on what the backend enforces, and the backend is not in this repo.
+- Appointments only store a date, not a time, and nothing checks for double booking.
+- Only patient deletion cascades. Deleting a doctor who has appointments shows a "cannot delete" message when the API answers 409.
+- A patient who registers has no patient record until an admin creates one with the same email, and until then booking fails with "Account not linked".
+- `dist/` and `build/` are committed. `dist/` came in with the 2025-12-15 commit, so it is older than the current source. `build/index.html` is the default Firebase placeholder page and is not used by `firebase.json`. Neither folder is in `.gitignore`.
+- Unused files left from scaffolding: `src/components/data-table.jsx`, `chart-area-interactive.jsx`, `section-cards.jsx`, `site-header.jsx`, `nav-*.jsx`, `Navbar.jsx`, `LoginForm.jsx`, `PageWrapper.jsx`, `DeleteBtn.jsx`, `components/examples/`, `src/app/dashboard/data.json`, `src/utils/dateUtils.js` (duplicated in `lib/utils.js`) and `src/pages/ProtectedRoute.jsx`, which reads a `token` that `useAuth` doesn't provide.
+- `CalendarView.jsx` imports `moment`, which is not listed in `package.json`. It installs only because the lockfile pulls it in as a peer dependency of React Big Calendar.
+- The package is still named `ca2-festivals-example`, from the course template.
+- The landing page copy ("Start Free Trial", "Enterprise-grade security") is placeholder text. There is no trial or billing.
 
-## 📝 Author
-**Adarsh Pandey**  
-Creative Computing - Year 3  
-CA2 - Front-End Development
+## Author
+
+AdamPandey
